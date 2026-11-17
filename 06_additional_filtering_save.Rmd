@@ -1,0 +1,123 @@
+---
+title: "Step 6: candidate NON-ESTABLISHED genes"
+output:
+  html_document:
+    toc: true
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(message = TRUE, warning = TRUE)
+source("00_setup.R")
+```
+
+Score filtering and a gene-level case/control burden test to find candidate
+NON-ESTABLISHED genes. Needs the tables written by `02_read_filter_save.Rmd`
+(PAPSS2/FAM20C removal and re-ranking already happened there).
+
+## Settings
+
+```{r settings}
+max_rank         <- candidate_max_rank  # set in 00_setup.R
+or_cutoff       <- 0.25  # minimum gene-level burden OR
+max_carrier_frac <- 0.01  # at most 1% carriers in cases and in controls
+n_cases_total    <- 701   # fixed cohort sizes, not derived from the data
+n_controls_total <- 200
+control_pattern  <- "^G"  # control Participant_IDs start with "G"
+benign_classes   <- c("LIKELY_BENIGN", "BENIGN")
+```
+
+## Data
+
+```{r data}
+all_vars <- read_all_vars() %>%
+  mutate(VAR = str_split_i(HGVS, ":", 3),
+         UNIQUE_ID = paste0(HGVS, "_", Participant_ID))
+
+write_tsv(all_vars, all_vars_file)
+```
+
+## Score filtering
+
+```{r score-filter}
+top_vars <- all_vars %>%
+  filter(EXOMISER_VARIANT_SCORE > var_score_cutoff,
+         EXOMISER_GENE_PHENO_SCORE > pheno_score_cutoff_candidate,
+         RANK <= max_rank)
+
+new_genes <- top_vars %>% filter(GROUP == "NON-ESTABLISHED")
+
+message("Top-ranked NON-ESTABLISHED rows: ", nrow(new_genes),
+        " in ", n_distinct(new_genes$GENE_SYMBOL), " genes")
+```
+
+## Per-gene carrier counts and burden test
+
+```{r burden}
+gene_burden <- new_genes %>%
+  group_by(GENE_SYMBOL) %>%
+  summarise(
+    N_All      = n_distinct(Participant_ID),
+    N_Controls = n_distinct(Participant_ID[str_detect(Participant_ID, control_pattern)]),
+    N_Cases    = N_All - N_Controls,
+    MEAN_VARIANT_SCORE = mean(EXOMISER_VARIANT_SCORE),
+    MEAN_PHENO_SCORE   = mean(EXOMISER_GENE_PHENO_SCORE),
+    .groups = "drop"
+  )
+
+# Fisher's exact test per gene: carriers vs total cohort size, cases vs controls
+fisher_burden <- function(n_cases, n_controls) {
+  test <- fisher.test(matrix(c(n_cases,    n_cases_total,
+                               n_controls, n_controls_total),
+                             nrow = 2))
+  tibble(OR = unname(test$estimate), p_val = test$p.value)
+}
+
+gene_burden <- gene_burden %>%
+  mutate(fisher = map2(N_Cases, N_Controls, fisher_burden)) %>%
+  unnest(fisher)
+```
+
+Genes with more than 90 carriers:
+
+```{r frequent-genes}
+gene_burden %>% filter(N_All > 90) %>% knitr::kable(digits = 3)
+```
+
+## Candidate filters
+
+```{r candidates}
+# Genes also found at top rank in ESTABLISHED cases are assumed false positives
+established_top_genes <- top_vars %>%
+  filter(GROUP == "ESTABLISHED") %>%
+  pull(GENE_SYMBOL)
+
+# Genes with at least one top-ranked variant not classified (likely) benign
+not_benign_genes <- new_genes %>%
+  filter(!EXOMISER_ACMG_CLASSIFICATION %in% benign_classes) %>%
+  pull(GENE_SYMBOL)
+
+candidates <- gene_burden %>%
+  filter(
+    OR > or_cutoff,
+    N_Cases > 1,
+    N_Cases    <= floor(max_carrier_frac * n_cases_total),
+    N_Controls <= floor(max_carrier_frac * n_controls_total),
+    !GENE_SYMBOL %in% established_top_genes,
+    GENE_SYMBOL %in% not_benign_genes,
+    GENE_SYMBOL != "NHERF1"  # synonym of an ESTABLISHED gene (SLC9A3R1)
+  )
+
+candidate_vars <- new_genes %>%
+  filter(!EXOMISER_ACMG_CLASSIFICATION %in% benign_classes,
+         GENE_SYMBOL %in% candidates$GENE_SYMBOL)
+
+message("Candidate NON-ESTABLISHED genes: ", nrow(candidates))
+knitr::kable(candidates, digits = 3)
+```
+
+## Save
+
+```{r save}
+write_tsv(candidates,     candidates_file)
+write_tsv(candidate_vars, candidate_vars_file)
+```

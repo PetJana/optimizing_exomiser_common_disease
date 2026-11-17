@@ -1,0 +1,32 @@
+hpo_id	label	category
+HP:0000787	Nephrolithiasis	kidney stones
+HP:0008672	Calcium oxalate nephrolithiasis	kidney stones
+HP:0004724	Calcium nephrolithiasis	kidney stones
+HP:0012580	Calcium phosphate nephrolithiasis	kidney stones
+HP:0000121	Nephrocalcinosis	kidney stones
+HP:0003072	Hypercalcemia	calcium
+HP:0002150	Hypercalciuria	calcium
+HP:0002901	Hypocalcemia	calcium
+HP:0012637	Renal calcium wasting	calcium
+HP:0000843	Hyperparathyroidism	parathyroid hormone
+HP:0003165	Elevated circulating parathyroid hormone level	parathyroid hormone
+HP:0100511	Abnormality of vitamin D metabolism	vitamin D
+HP:0031415	High serum calcitriol	vitamin D
+HP:0002748	Rickets	bone
+HP:0000939	Osteoporosis	bone
+HP:0002749	Osteomalacia	bone
+HP:0004349	Reduced bone mineral density	bone
+HP:0002148	Hypophosphatemia	phosphate
+HP:0003109	Hyperphosphaturia	phosphate
+HP:0002905	Hyperphosphatemia	phosphate
+HP:6000489	Abnormal circulating fibroblast growth factor 23 concentration	phosphate
+HP:0002917	Hypomagnesemia	magnesium
+HP:0004921	Abnormal magnesium concentration	magnesium
+HP:0005567	Renal magnesium wasting	magnesium
+HP:0012607	Abnormal urine magnesium concentration	magnesium
+HP:0033759	Impaired renal tubular reabsorption of magnesium	magnesium
+HP:0012609	Hypomagnesiuria	magnesium
+HP:0012404	Abnormal urine citrate concentration	citrate
+HP:0012405	Hypocitraturia	citrate
+HP:0001941	Acidosis	acid-base
+HP:0032943	Abnormal urine pH	acid-base

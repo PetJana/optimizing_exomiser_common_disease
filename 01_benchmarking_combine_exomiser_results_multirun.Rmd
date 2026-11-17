@@ -1,0 +1,77 @@
+---
+title: "Step 1: Exomiser benchmarking — counts per rank"
+output:
+  html_document:
+    toc: true
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(message = TRUE, warning = TRUE)
+source("00_setup.R")
+```
+
+For each Exomiser run, count how many manually confirmed gene / participant
+pairs are found within the top *N* ranks (*N* = 1–30). The counts are used by
+`03_benchmarking_figure_2A.Rmd`.
+
+## Settings
+
+```{r settings}
+max_rank_checked <- 30
+
+# my_run ("SKSC_3_MAF1per") is also the ESTABLISHED run in steps 2-6.
+my_runs <- c(
+  "SKSC_3_MAF1per_herIncluded_onlyKS",
+  "SKSC_3_MAF1per_herIncluded",
+  "SKSC_3_MAF1per"
+)
+```
+
+## Manually confirmed KS gene / participant pairs
+
+```{r manual-genes}
+genes_john <- read_manual_genes()
+```
+
+## Counts per rank, per run
+
+```{r process-runs}
+process_run <- function(run) {
+
+  all_vars <- read_exomiser_run(run) %>%
+    maybe_remove_genes() %>%
+    filter(EXOMISER_VARIANT_SCORE > var_score_cutoff,
+           EXOMISER_GENE_PHENO_SCORE > pheno_score_cutoff_benchmark)
+
+  message(run, " -- participants after score filtering: ", n_distinct(all_vars$Participant_ID))
+
+  # Best Exomiser rank of each manually confirmed gene / participant pair
+  manual_ranks <- all_vars %>%
+    inner_join(genes_john, by = c("Participant_ID", "GENE_SYMBOL"),
+               relationship = "many-to-many") %>%
+    best_rank_per_gene()
+
+  message(run, " -- pairs found: ", nrow(manual_ranks),
+          " (", n_distinct(manual_ranks$Participant_ID), " participants)")
+
+  # Number of pairs found within the top N ranks
+  counts <- tibble(
+    rank = seq_len(max_rank_checked),
+    n    = map_int(rank, \(r) sum(manual_ranks$RANK <= r))
+  )
+
+  write_delim(counts, counts_file(run), delim = " ", col_names = FALSE)
+  counts
+}
+
+all_counts <- my_runs %>%
+  set_names() %>%
+  map(process_run) %>%
+  list_rbind(names_to = "run")
+```
+
+```{r counts-table}
+all_counts %>%
+  pivot_wider(names_from = run, values_from = n) %>%
+  knitr::kable()
+```

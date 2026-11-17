@@ -1,0 +1,73 @@
+---
+title: "Step 5: Figure 2C, automated ACMG classification"
+output:
+  html_document:
+    toc: true
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(message = TRUE, warning = TRUE)
+source("00_setup.R")
+library(shadowtext)
+```
+
+Exomiser's automated ACMG classification, ESTABLISHED vs NON-ESTABLISHED
+genes. Needs the tables written by `02_read_filter_save.Rmd`.
+
+## Data
+
+```{r data}
+acmg_levels <- c("NOT_AVAILABLE", "BENIGN", "LIKELY_BENIGN",
+                 "UNCERTAIN_SIGNIFICANCE", "LIKELY_PATHOGENIC", "PATHOGENIC")
+
+acmg_to_plot <- read_all_vars() %>%
+  mutate(ACMG = factor(EXOMISER_ACMG_CLASSIFICATION, levels = acmg_levels)) %>%
+  count(ACMG, GROUP, name = "Freq") %>%
+  complete(ACMG, GROUP, fill = list(Freq = 0)) %>%  # keep empty classes
+  group_by(GROUP) %>%
+  mutate(Prop = Freq / sum(Freq)) %>%
+  ungroup()
+
+stopifnot(!anyNA(acmg_to_plot$ACMG))  # an unexpected ACMG class would be dropped silently
+
+knitr::kable(acmg_to_plot, digits = 3)
+```
+
+## Plot
+
+```{r plot, fig.width = 8, fig.height = 8}
+label_font <- "Econ Sans Cnd"
+
+acmg_automated_barplot <- ggplot(acmg_to_plot, aes(x = Prop, y = ACMG)) +
+  geom_col(aes(fill = GROUP), width = 0.6, show.legend = FALSE) +
+  scale_fill_manual(values = group_colors) +
+  # white counts inside long bars, outlined black counts elsewhere
+  geom_text(
+    data = filter(acmg_to_plot, Prop >= 0.5),
+    aes(x = 0, label = Freq),
+    hjust = 0, nudge_x = 0.3, colour = "white", family = label_font, size = 7
+  ) +
+  geom_shadowtext(
+    data = filter(acmg_to_plot, Prop < 0.5),
+    aes(x = 0, label = Freq),
+    hjust = 0, nudge_x = 0.3, colour = "black", bg.colour = "white", bg.r = 0.2,
+    family = label_font, size = 7
+  ) +
+  facet_wrap(~ GROUP) +
+  theme_bw() +
+  theme(strip.text       = element_text(size = 13, face = "bold"),
+        strip.background = element_rect(fill = "white")) +
+  labs(x = "PROPORTION OF VARIANT-PARTICIPANT PAIRS", y = "AUTOMATED ACMG CLASSIFICATION")
+
+acmg_automated_barplot
+```
+
+## Save
+
+```{r save}
+out_name <- paste0("Exomiser_ACMG_plot", file_suffix)
+
+ggsave(file.path(figures_dir, paste0(out_name, ".tiff")), acmg_automated_barplot,
+       width = 8, height = 8, device = "tiff", dpi = 700)
+save(acmg_automated_barplot, file = file.path(images_dir, paste0(out_name, ".RData")))
+```

@@ -1,0 +1,87 @@
+---
+title: "Step 11: MAGMA gene-level Manhattan plots"
+output:
+  html_document:
+    toc: true
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(message = TRUE, warning = TRUE)
+source("00_setup.R")
+library(ggmanh)
+```
+
+Manhattan plots of the MAGMA gene-level analysis (SKSC cases vs in-house
+controls): all genes, and only the candidate NON-ESTABLISHED genes from
+`06_additional_filtering_save.Rmd`.
+
+## Inputs
+
+```{r inputs}
+label_p_cutoff <- 5e-3  # all-genes plot: only genes below this p-value are labelled
+
+exomiser_genes <- read_tsv(candidates_file, show_col_types = FALSE)$GENE_SYMBOL
+
+magma <- read_table(file.path("input", "SKSC_and_Controls_WES_filtered_ks_gnomAD_0.02CADD20_GEN_SEX_corrected.genes.out"),
+                    show_col_types = FALSE) %>%
+  mutate(CHR   = factor(CHR, levels = 1:22),
+         label = if_else(P_MULTI < label_p_cutoff, GENE, NA_character_),
+         # PCNXL4 is the old symbol of PCNX4 (same gene and p-value): label it once
+         label = if_else(GENE == "PCNXL4", NA_character_, label))
+
+# Candidate genes: every gene is labelled
+magma_exomiser <- magma %>%
+  filter(GENE %in% exomiser_genes) %>%
+  mutate(label = GENE)
+
+message("MAGMA genes: ", nrow(magma),
+        " | labelled (p < ", label_p_cutoff, "): ", sum(!is.na(magma$label)),
+        " | candidate genes in MAGMA: ", nrow(magma_exomiser), " of ", length(exomiser_genes))
+```
+
+Candidate genes that are also on the curated candidate gene list:
+
+```{r curated}
+candidate_genes <- read_tsv(file.path("input", "candidate_genes_restr.txt"), show_col_types = FALSE)
+intersect(exomiser_genes, candidate_genes$GENE)
+```
+
+## All genes
+
+```{r all-genes, fig.width = 12, fig.height = 7}
+# Extra arguments are passed on to ggrepel::geom_label_repel: spread the labels
+# apart, show every label (max.overlaps = Inf) and fix the seed so the layout
+# is the same on every run.
+gene_level_all <- manhattan_plot(x = magma, pval.colname = "P_MULTI", chr.colname = "CHR",
+                                 pos.colname = "START", label.colname = "label",
+                                 plot.title = "MAGMA gene-level analysis: All genes",
+                                 y.label = " -log10(p-value)", rescale = FALSE,
+                                 label.font.size = 3, max.overlaps = Inf,
+                                 box.padding = 0.5, point.padding = 0.3,
+                                 force = 3, force_pull = 0.5, max.iter = 20000, seed = 42,
+                                 signif = c(5e-05, 5e-04, 5e-03, 0.05))
+gene_level_all
+```
+
+## Candidate NON-ESTABLISHED genes
+
+```{r exomiser-genes, fig.width = 7, fig.height = 7}
+gene_level_exomiser <- manhattan_plot(x = magma_exomiser, pval.colname = "P_MULTI", chr.colname = "CHR",
+                                      pos.colname = "START", label.colname = "label",
+                                      y.label = " -log10(p-value)", rescale = FALSE,
+                                      label.font.size = 4, max.overlaps = 10,
+                                      signif = 0.05)
+gene_level_exomiser
+```
+
+## Save
+
+```{r save}
+save_manhattan <- function(plot, name, width, height = 7) {
+  ggsave(file.path(figures_dir, paste0(name, file_suffix, ".pdf")), plot, width = width, height = height)
+  save(plot, file = file.path(images_dir, paste0(name, file_suffix, ".RData")))
+}
+
+save_manhattan(gene_level_all,      "MAGMA_gene_level_analysis_All_genes",      width = 12)
+save_manhattan(gene_level_exomiser, "MAGMA_gene_level_analysis_Exomiser_genes", width = 7)
+```

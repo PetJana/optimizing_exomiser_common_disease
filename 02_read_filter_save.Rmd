@@ -1,0 +1,83 @@
+---
+title: "Step 2: ESTABLISHED / NON-ESTABLISHED variant tables"
+output:
+  html_document:
+    toc: true
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(message = TRUE, warning = TRUE)
+source("00_setup.R")
+```
+
+Read the Exomiser results, split them into ESTABLISHED genes (manually
+confirmed KS gene / participant pairs) and NON-ESTABLISHED genes (all other
+genes outside the KS gene list), and save one table per group. These tables
+feed Figures 2B and 2C and step 6.
+
+## Inputs
+
+```{r inputs}
+data_filter <- read_study_filter()
+message("Participants passing study filtering: ", nrow(data_filter))
+
+genes_john <- read_manual_genes(data_filter)
+
+# KS gene list (one gene symbol per line, no header)
+ks_genes <- read_lines(ks_genes_file)
+message("KS genes: ", length(ks_genes))
+```
+
+## ESTABLISHED genes
+
+Each run is first collapsed to its best-ranked row per gene / participant
+(one rank per gene instead of one per inheritance mode); only then are
+PAPSS2/FAM20C removed and the remaining genes re-ranked, within that run.
+
+```{r read-run}
+read_collapsed_run <- function(run) {
+  read_exomiser_run(run) %>%
+    best_rank_per_gene() %>%
+    maybe_remove_genes()
+}
+```
+
+Exomiser hits in the manually confirmed gene / participant pairs.
+
+```{r established}
+vars_established <- read_collapsed_run(my_run) %>%
+  mutate(GROUP = "ESTABLISHED")
+
+message("Participants (ESTABLISHED run): ", n_distinct(vars_established$Participant_ID))
+
+vars_established <- vars_established %>%
+  inner_join(genes_john, by = c("Participant_ID", "GENE_SYMBOL"), relationship = "many-to-many")
+```
+
+## NON-ESTABLISHED genes
+
+Everything else in study participants, excluding known KS genes.
+
+```{r nonestablished}
+vars_nonestablished <- read_collapsed_run(nonhit_run) %>%
+  mutate(GROUP = "NON-ESTABLISHED") %>%
+  filter(Participant_ID %in% data_filter$VCF_FILE_ID,
+         !GENE_SYMBOL %in% ks_genes)
+```
+
+## Combine, save
+
+The final collapse only matters for a gene / participant pair present in both
+groups: it keeps the better-ranked row.
+
+```{r combine-save}
+all_vars <- bind_rows(vars_established, vars_nonestablished) %>%
+  best_rank_per_gene()
+
+all_vars %>%
+  count(GROUP, name = "gene_participant_pairs") %>%
+  knitr::kable()
+
+write_tsv(filter(all_vars, GROUP == "ESTABLISHED"), established_file)
+write_tsv(filter(all_vars, GROUP == "NON-ESTABLISHED"), nonestablished_file)
+```

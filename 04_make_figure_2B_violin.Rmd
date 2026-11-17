@@ -1,0 +1,60 @@
+---
+title: "Step 4: Figure 2B, Exomiser score distributions"
+output:
+  html_document:
+    toc: true
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(message = TRUE, warning = TRUE)
+source("00_setup.R")
+library(smplot2)
+```
+
+Phenotype and variant score distributions, ESTABLISHED vs NON-ESTABLISHED
+genes. Needs the tables written by `02_read_filter_save.Rmd`.
+
+## Data
+
+```{r data}
+scores_long <- read_all_vars() %>%
+  pivot_longer(c(EXOMISER_GENE_PHENO_SCORE, EXOMISER_VARIANT_SCORE),
+               names_to = "SCORE", values_to = "VALUE") %>%
+  mutate(SCORE = recode(SCORE,
+                        EXOMISER_GENE_PHENO_SCORE = "PHENOTYPE SCORE",
+                        EXOMISER_VARIANT_SCORE    = "VARIANT SCORE"))
+
+# Score cutoffs: candidate search (green) and benchmarking (grey)
+candidate_cutoffs <- tibble(SCORE  = c("PHENOTYPE SCORE", "VARIANT SCORE"),
+                            CUTOFF = c(pheno_score_cutoff_candidate, var_score_cutoff))
+benchmark_cutoffs <- tibble(SCORE  = "PHENOTYPE SCORE",
+                            CUTOFF = pheno_score_cutoff_benchmark)
+```
+
+## Plot
+
+```{r plot, fig.width = 8, fig.height = 8}
+scores_pheno_var_violin_plot <- ggplot(scores_long, aes(x = GROUP, y = VALUE, color = GROUP)) +
+  sm_violin(points = FALSE) +
+  scale_color_manual(values = group_colors) +
+  facet_wrap(~ SCORE) +
+  geom_hline(data = candidate_cutoffs, aes(yintercept = CUTOFF),
+             colour = colorBlindGrey8[[4]], linetype = "dashed", linewidth = 1) +
+  geom_hline(data = benchmark_cutoffs, aes(yintercept = CUTOFF),
+             colour = "gray", linetype = "dashed", linewidth = 1) +
+  labs(x = "GROUP OF GENES", y = "EXOMISER SCORE") +
+  theme(strip.text       = element_text(size = 13, face = "bold"),
+        strip.background = element_rect(fill = "white"))
+
+scores_pheno_var_violin_plot
+```
+
+## Save
+
+```{r save}
+out_name <- paste0("Exomiser_scores_violin_plot", file_suffix)
+
+ggsave(file.path(figures_dir, paste0(out_name, ".tiff")), scores_pheno_var_violin_plot,
+       width = 8, height = 8, device = "tiff", dpi = 700)
+save(scores_pheno_var_violin_plot, file = file.path(images_dir, paste0(out_name, ".RData")))
+```

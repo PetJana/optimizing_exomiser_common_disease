@@ -1,0 +1,28 @@
+# R session files
+.Rhistory
+.RData
+.Rproj.user/
+*_cache/
+*_files/
+
+# Input data (never commit)
+Exomiser_*/
+ids_filtering/
+*.vcf
+*.vcf.gz
+*.variants.tsv
+Vars_from_Munch_*.txt
+KS_genes.txt
+
+# Outputs with possible participant-level data or large size
+output/results/
+output/reports/
+output/figures/images/*.RData
+output/figures/*.tiff
+output/figures/biochem_per_gene/
+viewer_app/figures.zip
+viewer_app/figures/
+viewer_app/data/
+viewer_app/rsconnect/
+deploy.R
+12_biochem_per_gene.Rmd

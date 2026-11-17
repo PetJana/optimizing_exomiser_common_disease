@@ -1,0 +1,191 @@
+---
+title: "Step 9: candidate genes in gene-level burden tests"
+output:
+  html_document:
+    toc: true
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(message = TRUE, warning = TRUE)
+source("00_setup.R")
+library(gt)
+library(ggVennDiagram)
+```
+
+Looks up the candidate NON-ESTABLISHED genes from
+`06_additional_filtering_save.Rmd` in three gene-level burden tests (MAGMA on
+SKSC cases vs in-house controls, SKSC cases vs external controls, and UK
+Biobank kidney stone PheWAS), and draws the SKSC / UKBB overlap used in
+Figure 3B.
+
+## Settings and inputs
+
+```{r inputs}
+input_dir   <- "input"
+p_cutoff    <- 0.05
+ukbb_models <- c("flexdmg", "ptv5pcnt", "ptvraredmg", "raredmg")  # UKBB collapsing models used
+
+# Genes named explicitly under the Venn diagram; the rest are counted
+highlight_genes <- c("ATP7B", "PHEX", "FGF23", "GNA11")
+
+exomiser_genes <- read_tsv(candidates_file, show_col_types = FALSE)$GENE_SYMBOL
+message("Candidate NON-ESTABLISHED genes: ", length(exomiser_genes))
+
+candidate_genes <- read_tsv(file.path(input_dir, "candidate_genes_restr.txt"), show_col_types = FALSE)
+
+magma <- read_table(file.path(input_dir, "SKSC_and_Controls_WES_filtered_ks_gnomAD_0.02CADD20_GEN_SEX_corrected.genes.out"),
+                    show_col_types = FALSE)
+
+burden_ext <- read_tsv(file.path(input_dir, "Results_misslof_am0.8_1_lambda1.12_GnomADMAF0.01_MAF0.01_ks.txt"),
+                       show_col_types = FALSE)
+
+ukbb <- read_csv(file.path(input_dir, "41202_N200_Calculus_of_kidney_GL_0506T122640Z_AZ_PheWAS_Portal.csv"),
+                 show_col_types = FALSE, name_repair = "universal") %>%
+  filter(Ancestry == "European",
+         Collapsing.model %in% ukbb_models,
+         Odds.ratio > 1)
+```
+
+## Overlap with the curated candidate gene list
+
+```{r candidate-list}
+candidate_genes %>%
+  filter(GENE %in% exomiser_genes) %>%
+  knitr::kable()
+```
+
+## MAGMA: SKSC cases vs in-house controls
+
+FDR is computed across the candidate genes found in MAGMA; P_MULTI < 0.05 is
+highlighted.
+
+```{r magma}
+magma_exomiser <- magma %>%
+  filter(GENE %in% exomiser_genes) %>%
+  mutate(P_ADJ = p.adjust(P_MULTI, method = "fdr")) %>%
+  arrange(P_MULTI) %>%
+  select(GENE, CHR, START, STOP, N, ZSTAT, P_MULTI, P_ADJ)
+
+magma_table <- gt(magma_exomiser, rowname_col = "GENE") %>%
+  fmt_number(c(ZSTAT, P_MULTI, P_ADJ), decimals = 4) %>%
+  tab_style(style = cell_fill(color = "pink"),
+            locations = cells_body(columns = P_MULTI, rows = P_MULTI <= p_cutoff))
+
+gtsave(magma_table, file.path(results_dir, paste0("MAGMA_Exomiser_genes", file_suffix, ".docx")))
+magma_table
+```
+
+## SKSC cases vs external controls
+
+Candidate genes with p < 0.05 (not used in the Venn diagram):
+
+```{r external-controls}
+burden_ext %>%
+  filter(gene %in% exomiser_genes, pval < p_cutoff) %>%
+  arrange(pval) %>%
+  select(gene, pval, OR, het.case, het.control, n.case, n.control) %>%
+  knitr::kable(digits = 4)
+```
+
+## UK Biobank kidney stone PheWAS
+
+European ancestry, collapsing models `r paste(ukbb_models, collapse = ", ")`,
+OR > 1. FDR is computed across all rows of the candidate genes (one per gene
+and collapsing model); P value < 0.05 is highlighted.
+
+```{r ukbb}
+ukbb_exomiser <- ukbb %>%
+  filter(Gene %in% exomiser_genes) %>%
+  mutate(P_ADJ = p.adjust(P.value, method = "fdr")) %>%
+  arrange(P.value) %>%
+  select(Gene, Collapsing.model, Odds.ratio, P.value, P_ADJ)
+
+ukbb_table <- gt(ukbb_exomiser, rowname_col = "Gene") %>%
+  fmt_number(c(Odds.ratio, P.value, P_ADJ), decimals = 4) %>%
+  tab_style(style = cell_fill(color = "pink"),
+            locations = cells_body(columns = P.value, rows = P.value <= p_cutoff))
+
+gtsave(ukbb_table, file.path(results_dir, paste0("UKBB_Exomiser_genes", file_suffix, ".docx")))
+ukbb_table
+```
+
+## SKSC / UKBB overlap (Figure 3B)
+
+```{r overlap-sets}
+genes_list <- list(
+  SKSC = magma_exomiser$GENE[magma_exomiser$P_MULTI < p_cutoff],
+  UKBB = unique(ukbb_exomiser$Gene[ukbb_exomiser$P.value < p_cutoff])
+)
+
+sksc_only <- setdiff(genes_list$SKSC, genes_list$UKBB)
+both      <- intersect(genes_list$SKSC, genes_list$UKBB)
+ukbb_only <- setdiff(genes_list$UKBB, genes_list$SKSC)
+neither   <- setdiff(exomiser_genes, c(genes_list$SKSC, genes_list$UKBB))
+
+message("SKSC only: ", paste(sksc_only, collapse = ", "),
+        " | both: ", paste(both, collapse = ", "),
+        " | UKBB only: ", paste(ukbb_only, collapse = ", "),
+        " | neither: ", length(neither))
+
+missing_highlights <- setdiff(highlight_genes, neither)
+if (length(missing_highlights) > 0) {
+  warning("Highlighted genes not among the 'neither' genes: ", paste(missing_highlights, collapse = ", "))
+}
+shown_highlights <- intersect(highlight_genes, neither)
+bottom_label <- paste0(paste(shown_highlights, collapse = ", "),
+                       " + ", length(neither) - length(shown_highlights), " genes")
+
+# "A;B;\nC;D;\nE": `per_line` genes per line
+wrap_genes <- function(genes, per_line = 2) {
+  if (length(genes) == 0) return("")
+  sort(genes) %>%
+    split(ceiling(seq_along(.) / per_line)) %>%
+    map_chr(\(g) paste(g, collapse = ";")) %>%
+    paste(collapse = ";\n")
+}
+```
+
+```{r overlap-plot, fig.width = 12, fig.height = 8}
+# Large enclosing circle, in the pre-flip data space (x = vertical,
+# y = horizontal after coord_flip). The Venn spans x in [-4, 4] and
+# y in [-4, 8], so the circle is centred at (0, 2); aspect.ratio turns it
+# into an oval.
+circle_centre <- c(x = 0, y = 2)
+circle_r      <- 9.5
+theta         <- seq(0, 2 * pi, length.out = 400)
+lim           <- circle_r + 0.3
+
+big_circle <- annotate("polygon",
+                       x = circle_centre["x"] + circle_r * cos(theta),
+                       y = circle_centre["y"] + circle_r * sin(theta),
+                       fill = "#FBFDFF", colour = "#4981BF", linewidth = 1.2)
+
+gene_overlap_plot <- ggVennDiagram(genes_list, color = 1, lwd = 0.7, label = "none",
+                                   category.names = NA, label_alpha = 0) +
+  scale_fill_gradient(low = "#F4FAFE", high = "#4981BF") +
+  coord_flip(xlim = circle_centre["x"] + c(-lim, lim),
+             ylim = circle_centre["y"] + c(-lim, lim), expand = FALSE) +
+  annotate("text", label = names(genes_list), x = c(2, 2), y = c(-1.2, 5.2),
+           size = 9, fontface = "bold") +
+  annotate("text", label = c(wrap_genes(sksc_only), wrap_genes(both), wrap_genes(ukbb_only)),
+           x = c(0, 0, 0), y = c(-1.5, 1.9, 6),
+           size = 6, fontface = "italic", colour = c("black", "darkred", "black")) +
+  annotate("text", label = "Novel genes\nnominated by Exomiser", x = 6.2, y = circle_centre["y"],
+           size = 10, fontface = "bold") +
+  annotate("text", label = bottom_label, x = -6, y = circle_centre["y"],
+           size = 6, fontface = "italic") +
+  theme(legend.position  = "none",
+        aspect.ratio     = 0.65,  # < 1 stretches all circles into horizontal ovals
+        panel.background = element_rect(fill = "white"),
+        plot.background  = element_rect(fill = "white"))
+
+# Draw the big circle underneath the Venn layers
+gene_overlap_plot$layers <- c(big_circle, gene_overlap_plot$layers)
+
+gene_overlap_plot
+
+out_name <- paste0("Exomiser_gene_level_tests_overlap", file_suffix)
+ggsave(file.path(figures_dir, paste0(out_name, ".png")), gene_overlap_plot,
+       width = 12, height = 8, dpi = 150)
+save(gene_overlap_plot, file = file.path(images_dir, paste0(out_name, ".RData")))
+```

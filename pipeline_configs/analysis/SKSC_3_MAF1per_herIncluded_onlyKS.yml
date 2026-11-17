@@ -1,0 +1,59 @@
+## Exomiser v14.0.0 analysis — run "SKSC_3_MAF1per_herIncluded_onlyKS"
+## Benchmarking run, Figure 2A label "KSD, default settings":
+##   - HPO: nephrolithiasis only
+##   - inheritance-mode weighting on (omimPrioritiser)
+##   - max. MAF 1% for dominant and homozygous recessive modes
+##   - pathogenicity: REVEL, MVP, SpliceAI, AlphaMissense
+## The VCF is passed per sample on the command line (see ../run_exomiser.sh).
+---
+analysis:
+    genomeAssembly: hg19
+    ped:
+    proband:
+    hpoIds: ['HP:0000787']
+    # maximum minor allele frequency (%) per mode of inheritance
+    inheritanceModes: {
+      AUTOSOMAL_DOMINANT: 1.0,
+      AUTOSOMAL_RECESSIVE_HOM_ALT: 1.0,
+      AUTOSOMAL_RECESSIVE_COMP_HET: 2.0,
+      X_DOMINANT: 1.0,
+      X_RECESSIVE_HOM_ALT: 1.0,
+      X_RECESSIVE_COMP_HET: 2.0,
+      MITOCHONDRIAL: 0.2
+    }
+    analysisMode: PASS_ONLY
+    frequencySources: [
+        UK10K,
+        GNOMAD_E_AFR, GNOMAD_E_AMR, GNOMAD_E_EAS, GNOMAD_E_NFE, GNOMAD_E_SAS,
+        GNOMAD_G_AFR, GNOMAD_G_AMR, GNOMAD_G_EAS, GNOMAD_G_NFE, GNOMAD_G_SAS
+    ]
+    pathogenicitySources: [REVEL, MVP, SPLICE_AI, ALPHA_MISSENSE]
+    steps: [
+        failedVariantFilter: {},
+        variantEffectFilter: {
+          remove: [
+              FIVE_PRIME_UTR_EXON_VARIANT,
+              FIVE_PRIME_UTR_INTRON_VARIANT,
+              THREE_PRIME_UTR_EXON_VARIANT,
+              THREE_PRIME_UTR_INTRON_VARIANT,
+              NON_CODING_TRANSCRIPT_EXON_VARIANT,
+              NON_CODING_TRANSCRIPT_INTRON_VARIANT,
+              CODING_TRANSCRIPT_INTRON_VARIANT,
+              UPSTREAM_GENE_VARIANT,
+              DOWNSTREAM_GENE_VARIANT,
+              INTERGENIC_VARIANT,
+              REGULATORY_REGION_VARIANT
+          ]
+        },
+        frequencyFilter: {maxFrequency: 2.0},
+        pathogenicityFilter: {keepNonPathogenic: true},
+        inheritanceFilter: {},
+        omimPrioritiser: {},
+        hiPhivePrioritiser: {}
+    ]
+outputOptions:
+    outputContributingVariantsOnly: false
+    numGenes: 0
+    # relative to the directory Exomiser is run from (its install directory)
+    outputDirectory: results/SKSC_3_MAF1per_herIncluded_onlyKS
+    outputFormats: [HTML, JSON, TSV_GENE, TSV_VARIANT, VCF]

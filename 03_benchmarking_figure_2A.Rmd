@@ -1,0 +1,68 @@
+---
+title: "Step 3: Figure 2A, comparison of Exomiser runs"
+output:
+  html_document:
+    toc: true
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(message = TRUE, warning = TRUE)
+source("00_setup.R")
+```
+
+Proportion of manually confirmed gene / participant pairs prioritized within
+the top *N* Exomiser ranks, per run. Needs the counts written by
+`01_benchmarking_combine_exomiser_results_multirun.Rmd`.
+
+## Data
+
+```{r data}
+# Run folder -> legend label (legend order follows this order)
+runs <- c(
+  "SKSC_3_MAF1per_herIncluded_onlyKS" = "KSD, default settings",
+  "SKSC_3_MAF1per_herIncluded"        = "KSD+, default settings",
+  "SKSC_3_MAF1per"                    = "KSD+, any inh."
+)
+
+# Denominator: all manually confirmed gene / participant pairs
+n_total <- nrow(read_manual_genes())
+message("n_total (gene / participant pairs): ", n_total)
+
+rank_data <- names(runs) %>%
+  set_names() %>%
+  map(\(run) read_delim(counts_file(run), delim = " ",
+                        col_names = c("MAX_RANK", "N"), show_col_types = FALSE)) %>%
+  list_rbind(names_to = "run") %>%
+  mutate(prop = N / n_total,
+         run  = factor(runs[run], levels = runs))
+```
+
+## Plot
+
+```{r plot, fig.width = 7, fig.height = 8}
+rank_plot <- ggplot(rank_data, aes(x = MAX_RANK, y = prop, colour = run)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  labs(x = "Exomiser rank of variants",
+       y = "Proportion of potential monogenic variants prioritized") +
+  theme_minimal() +
+  theme(axis.text  = element_text(size = 18),
+        axis.title = element_text(size = 18),
+        legend.position        = "inside",
+        legend.position.inside = c(0.6, 0.2),
+        legend.direction       = "vertical",
+        legend.text  = element_text(size = 18),
+        legend.title = element_text(size = 18))
+
+rank_plot
+```
+
+## Save
+
+```{r save}
+out_name <- paste0("Exomiser_rank_of_target_KS_variants_multiple_runs_comparison", file_suffix)
+
+ggsave(file.path(figures_dir, paste0(out_name, ".png")), rank_plot,
+       dpi = 350, width = 7, height = 8, bg = "white")
+save(rank_plot, file = file.path(images_dir, paste0(out_name, ".RData")))
+```

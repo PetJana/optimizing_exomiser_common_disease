@@ -1,0 +1,87 @@
+---
+title: "Step 10: combined Figures 2 and 3"
+output:
+  html_document:
+    toc: true
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(message = TRUE, warning = TRUE)
+source("00_setup.R")
+library(ggpubr)
+library(shadowtext)  # needed to draw the ACMG plot's labels
+```
+
+Combines the plots saved by steps 3–5, 7 and 9 into the paper figures.
+
+## Inputs
+
+```{r inputs}
+enrich_tag <- paste0("rank", candidate_max_rank, remove_vars,
+                     "_no_monogen_old_gene_Exomiser", exomiser_version)
+
+plot_files <- c(
+  rank   = file.path(images_dir, paste0("Exomiser_rank_of_target_KS_variants_multiple_runs_comparison", file_suffix, ".RData")),
+  violin = file.path(images_dir, paste0("Exomiser_scores_violin_plot", file_suffix, ".RData")),
+  acmg   = file.path(images_dir, paste0("Exomiser_ACMG_plot", file_suffix, ".RData")),
+  go_dot = file.path(images_dir, paste0("GO_BP_dotplot_", enrich_tag, ".RData")),
+  overlap = file.path(images_dir, paste0("Exomiser_gene_level_tests_overlap", file_suffix, ".RData"))
+)
+
+missing <- plot_files[!file.exists(plot_files)]
+if (length(missing) > 0) stop("Missing plot files:\n", paste(missing, collapse = "\n"))
+
+# Each .RData holds one plot object; return it whatever it is called
+load_plot <- function(file) {
+  env <- new.env()
+  obj <- load(file, envir = env)
+  env[[obj[[1]]]]
+}
+
+plots <- map(plot_files, load_plot)
+
+# The tiff device does not fail when it cannot overwrite a file (e.g. one open
+# in an image viewer), so remove the old figure first and check the new one.
+save_figure <- function(plot, name, width, height) {
+  file <- file.path(figures_dir, paste0(name, file_suffix, ".tiff"))
+  if (file.exists(file) && !file.remove(file)) {
+    stop("Cannot replace ", file, " -- is it open in another program?")
+  }
+  ggsave(file, plot, width = width, height = height, device = "tiff",
+         dpi = 700, bg = "white", compression = "lzw")
+  if (!file.exists(file)) stop("Figure was not written: ", file)
+  message("Written: ", file)
+}
+```
+
+## Figure 2
+
+A: benchmarking of Exomiser runs, B: score distributions, C: automated ACMG
+classification.
+
+```{r figure-2, fig.width = 25, fig.height = 8}
+with_margin <- function(p) p + theme(plot.margin = margin(1, 1, 1, 1, "cm"))
+
+figure_2 <- ggarrange(with_margin(plots$rank), with_margin(plots$violin), with_margin(plots$acmg),
+                      labels = c("A", "B", "C"),
+                      font.label = list(size = 20),
+                      ncol = 3, nrow = 1, align = "hv")
+
+figure_2
+save_figure(figure_2, "Figure2", width = 25, height = 8)
+```
+
+## Figure 3
+
+A: GO enrichment of the candidate NON-ESTABLISHED genes, B: overlap with
+gene-level burden tests.
+
+```{r figure-3, fig.width = 10, fig.height = 20}
+figure_3 <- ggarrange(plots$go_dot, plots$overlap,
+                      labels = c("A", "B"),
+                      font.label = list(size = 25),
+                      ncol = 1, nrow = 2, heights = c(2, 1))
+
+figure_3
+save_figure(figure_3, "Figure3", width = 10, height = 20)
+```

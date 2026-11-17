@@ -1,0 +1,212 @@
+---
+title: "Step 7: GO / KEGG enrichment of candidate NON-ESTABLISHED genes"
+output:
+  html_document:
+    toc: true
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(message = TRUE, warning = TRUE)
+source("00_setup.R")
+
+library(clusterProfiler)
+library(enrichplot)
+library(simplifyEnrichment)
+library(rrvgo)
+library(gt)
+```
+
+Over-representation analysis of the candidate NON-ESTABLISHED genes from
+`06_additional_filtering_save.Rmd`, against all genes in the Exomiser results
+as background.
+
+## Settings and inputs
+
+```{r inputs}
+enrich_dir <- file.path(figures_dir, "enrichment")
+dir.create(enrich_dir, recursive = TRUE, showWarnings = FALSE)
+
+# Appended to every output file name
+enrich_tag <- paste0("rank", candidate_max_rank, remove_vars,
+                     "_no_monogen_old_gene_Exomiser", exomiser_version)
+
+save_enrich_plot <- function(plot, name, width, height) {
+  ggsave(file.path(enrich_dir, paste0(name, "_", enrich_tag, ".pdf")), plot,
+         width = width, height = height)
+  save(plot, file = file.path(images_dir, paste0(name, "_", enrich_tag, ".RData")))
+}
+
+# Background: every gene in the (ESTABLISHED + NON-ESTABLISHED) Exomiser results
+all_genes <- read_tsv(all_vars_file, show_col_types = FALSE) %>%
+  distinct(GENE_SYMBOL) %>%
+  pull()
+
+candidates <- read_tsv(candidates_file, show_col_types = FALSE)
+gene_list  <- candidates$GENE_SYMBOL
+
+message("Background genes: ", length(all_genes), " | Candidate genes: ", length(gene_list))
+```
+
+## Candidate genes
+
+```{r candidate-table}
+candidate_table <- candidates %>%
+  select(GENE_SYMBOL, N_Cases, N_Controls, MEAN_PHENO_SCORE, MEAN_VARIANT_SCORE) %>%
+  gt(rowname_col = "GENE_SYMBOL") %>%
+  fmt_number(c(MEAN_PHENO_SCORE, MEAN_VARIANT_SCORE), decimals = 2)
+
+gtsave(candidate_table, file.path(results_dir, paste0("Non_ESTABLISHED_candidate_genes_", enrich_tag, ".docx")))
+candidate_table
+```
+
+## GO enrichment (biological process)
+
+```{r go-enrich}
+go_enrich <- enrichGO(gene          = gene_list,
+                      universe      = all_genes,
+                      OrgDb         = "org.Hs.eg.db",
+                      keyType       = "SYMBOL",
+                      ont           = "BP",
+                      pAdjustMethod = "BH",
+                      pvalueCutoff  = 0.05,
+                      qvalueCutoff  = 0.05)
+
+# Collapse redundant GO terms (Wang semantic similarity > 0.5)
+go_enrich_simple <- clusterProfiler::simplify(go_enrich, cutoff = 0.5, by = "p.adjust",
+                                              select_fun = min, measure = "Wang")
+
+message("Enriched GO terms: ", nrow(go_enrich), " | after simplify: ", nrow(go_enrich_simple))
+if (nrow(go_enrich_simple) == 0) stop("No enriched GO terms -- nothing to plot.")
+
+save(go_enrich_simple, file = file.path(results_dir, paste0("go_enrich_", enrich_tag, ".RData")))
+
+go_enrich_simple %>%
+  as_tibble() %>%
+  select(ID, Description, GeneRatio, pvalue, p.adjust, geneID, Count) %>%
+  knitr::kable(digits = 4)
+```
+
+### Dot plot
+
+```{r go-dotplot, fig.width = 10, fig.height = 8}
+go_dotplot <- dotplot(go_enrich_simple, font.size = 18) +
+  scale_size_area(max_size = 15) +
+  theme(legend.title = element_text(size = 18, face = "bold"),
+        legend.text  = element_text(size = 16))
+
+go_dotplot
+save_enrich_plot(go_dotplot, "GO_BP_dotplot", width = 10, height = 8)
+```
+
+### UpSet plot
+
+```{r go-upsetplot, fig.width = 9, fig.height = 5}
+go_upsetplot <- upsetplot(go_enrich_simple) +
+  theme(axis.text.x = element_text(size = 18, angle = 90, vjust = 0.5),  # gene set names
+        axis.text.y = element_text(size = 18))                           # overlap counts
+
+go_upsetplot
+save_enrich_plot(go_upsetplot, "GO_BP_upsetplot", width = 9, height = 5)
+```
+
+### Bar plot
+
+```{r go-barplot, fig.width = 10, fig.height = 8}
+go_barplot <- barplot(go_enrich_simple,
+                      drop         = TRUE,
+                      showCategory = 10,
+                      title        = "GO Biological Pathways",
+                      font.size    = 18) +
+  theme(legend.title = element_text(size = 18, face = "bold"),
+        legend.text  = element_text(size = 16))
+
+go_barplot
+save_enrich_plot(go_barplot, "GO_BP_barplot", width = 10, height = 8)
+```
+
+### GO graph
+
+```{r go-goplot, fig.width = 10, fig.height = 8}
+go_goplot <- goplot(go_enrich_simple, showCategory = 10)
+
+go_goplot
+save_enrich_plot(go_goplot, "GO_BP_goplot", width = 10, height = 8)
+```
+
+## KEGG enrichment
+
+Needs an internet connection (KEGG is queried online). Genes without an
+Entrez ID are dropped.
+
+```{r kegg-enrich}
+ids <- bitr(all_genes, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = "org.Hs.eg.db") %>%
+  distinct(SYMBOL, .keep_all = TRUE)
+
+kegg_genes <- ids$ENTREZID[ids$SYMBOL %in% gene_list]
+message("Candidate genes with an Entrez ID: ", length(kegg_genes), " of ", length(gene_list))
+
+kk <- enrichKEGG(gene          = kegg_genes,
+                 universe      = ids$ENTREZID,
+                 organism      = "hsa",
+                 keyType       = "kegg",
+                 pvalueCutoff  = 0.05,
+                 pAdjustMethod = "BH")
+
+save(kk, file = file.path(results_dir, paste0("kegg_enrich_", enrich_tag, ".RData")))
+
+kk_ok <- !is.null(kk) && nrow(kk) > 0
+message("Enriched KEGG pathways: ", if (kk_ok) nrow(kk) else 0)
+if (kk_ok) knitr::kable(head(as_tibble(kk), 10), digits = 4)
+```
+
+```{r kegg-plots, fig.width = 6, fig.height = 8}
+if (kk_ok) {
+  kegg_barplot <- barplot(kk, showCategory = 10, title = "Enriched Pathways", font.size = 8)
+  print(kegg_barplot)
+  save_enrich_plot(kegg_barplot, "KEGG_barplot", width = 6, height = 8)
+
+  kegg_dotplot <- dotplot(kk, showCategory = 10, title = "Enriched Pathways", font.size = 8)
+  print(kegg_dotplot)
+  save_enrich_plot(kegg_dotplot, "KEGG_dotplot", width = 6, height = 8)
+}
+```
+
+## GO term clustering (simplifyEnrichment)
+
+Significant GO terms from the unsimplified enrichment, clustered by semantic
+similarity with the binary-cut method.
+
+```{r simplify-enrichment, fig.width = 9, fig.height = 7}
+go_ids <- go_enrich@result$ID[go_enrich@result$p.adjust < 0.05]
+go_sim <- GO_similarity(go_ids, ont = "BP", db = "org.Hs.eg.db")
+
+# Draws the heatmap and returns the cluster of each GO term
+go_clusters <- simplifyGO(go_sim, method = "binary_cut", column_title = "Simplified GO Terms")
+
+go_clusters %>% arrange(cluster) %>% knitr::kable()
+```
+
+## GO term reduction (rrvgo)
+
+```{r rrvgo, fig.width = 9, fig.height = 7}
+go_results <- as.data.frame(go_enrich)
+go_scores  <- setNames(-log10(go_results$p.adjust), go_results$ID)  # higher = more significant
+
+rrvgo_sim <- calculateSimMatrix(go_results$ID,
+                                orgdb  = "org.Hs.eg.db",
+                                ont    = "BP",
+                                method = "Rel")
+
+# Lower threshold = fewer, broader parent terms (0.7 is the rrvgo default)
+reduced_terms <- reduceSimMatrix(rrvgo_sim, go_scores,
+                                 threshold = 0.4,
+                                 orgdb     = "org.Hs.eg.db")
+
+scatterPlot(rrvgo_sim, reduced_terms, labelSize = 5)
+treemapPlot(reduced_terms)
+
+reduced_terms %>%
+  select(go, term, parentTerm, score) %>%
+  arrange(parentTerm, desc(score)) %>%
+  knitr::kable(digits = 2)
+```
