@@ -19,8 +19,8 @@ the top *N* Exomiser ranks, per run. Needs the counts written by
 ```{r data}
 # Run folder -> legend label (legend order follows this order)
 runs <- c(
-  "SKSC_3_MAF1per_herIncluded_onlyKS" = "KSD, default settings",
-  "SKSC_3_MAF1per_herIncluded"        = "KSD+, default settings",
+  "SKSC_3_MAF1per_herIncluded_onlyKS" = "KSD",
+  "SKSC_3_MAF1per_herIncluded"        = "KSD+",
   "SKSC_3_MAF1per"                    = "KSD+, any inh."
 )
 
@@ -43,8 +43,9 @@ rank_data <- names(runs) %>%
 rank_plot <- ggplot(rank_data, aes(x = MAX_RANK, y = prop, colour = run)) +
   geom_line(linewidth = 1) +
   geom_point(size = 2) +
-  labs(x = "Exomiser rank of variants",
-       y = "Proportion of potential monogenic variants prioritized") +
+  scale_y_continuous(limits = c(0, 1)) +
+  labs(x = "Exomiser rank",
+       y = "Proportion of established gene-participant pairings prioritized") +
   theme_minimal() +
   theme(axis.text  = element_text(size = 18),
         axis.title = element_text(size = 18),

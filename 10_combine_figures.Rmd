@@ -59,16 +59,24 @@ save_figure <- function(plot, name, width, height) {
 A: benchmarking of Exomiser runs, B: score distributions, C: automated ACMG
 classification.
 
-```{r figure-2, fig.width = 25, fig.height = 8}
+```{r figure-2, fig.width = 16, fig.height = 18}
 with_margin <- function(p) p + theme(plot.margin = margin(1, 1, 1, 1, "cm"))
 
-figure_2 <- ggarrange(with_margin(plots$rank), with_margin(plots$violin), with_margin(plots$acmg),
-                      labels = c("A", "B", "C"),
-                      font.label = list(size = 20),
-                      ncol = 3, nrow = 1, align = "hv")
+top_row <- ggarrange(with_margin(plots$rank), with_margin(plots$violin),
+                     labels = c("A", "B"),
+                     font.label = list(size = 20),
+                     ncol = 2, nrow = 1, align = "hv")
+
+bottom_row <- ggarrange(NULL, with_margin(plots$acmg), NULL,
+                        labels = c("", "C", ""),
+                        font.label = list(size = 20),
+                        ncol = 3, nrow = 1,
+                        widths = c(0.5, 1, 0.5))
+
+figure_2 <- ggarrange(top_row, bottom_row, ncol = 1, nrow = 2)
 
 figure_2
-save_figure(figure_2, "Figure2", width = 25, height = 8)
+save_figure(figure_2, "Figure2", width = 16, height = 18)
 ```
 
 ## Figure 3
