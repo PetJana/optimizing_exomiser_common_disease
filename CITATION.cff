@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite it as below. The manuscript is in preparation; this file will be updated with the preprint once available."
+title: "Optimizing Exomiser to prioritize candidate genes underlying monogenic forms of common disease"
+type: software
+license: MIT
+repository-code: "https://github.com/PetJana/optimizing_exomiser_common_disease"
+date-released: 2026-11-21
+authors:
+  - family-names: Petrovska
+    given-names: Jana
+  - family-names: Rubio-Aliaga
+    given-names: Isabel
+  - family-names: "T'Sjoen"
+    given-names: Dorian
+  - family-names: Van Wynsberghe
+    given-names: Judith
+  - family-names: Vanakker
+    given-names: Olivier
+  - family-names: Münch
+    given-names: Johannes
+  - family-names: Cabello
+    given-names: Elena M.
+  - family-names: Bonny
+    given-names: Olivier
+  - family-names: Wagner
+    given-names: Carsten A.
+  - family-names: Bachmann-Gagescu
+    given-names: Ruxandra

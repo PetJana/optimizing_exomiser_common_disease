@@ -1,6 +1,6 @@
 # Optimizing Exomiser to prioritize candidate genes underlying monogenic forms of common disease
 
-Scripts and analysis code accompanying the manuscript **"Optimizing Exomiser to prioritize candidate genes underlying monogenic forms of common disease"** (Jana Petrovska, Isabel Rubio-Aliaga, Dorian T'Sjoen, Judith Van Wynsberghe, Olivier Vanakker, Johannes Münch, Elena M. Cabello, Olivier Bonny, Carsten A. Wagner, Ruxandra Bachmann-Gagescu; *<Journal>*, <Year>). [Link to paper]
+Scripts and analysis code accompanying the manuscript **"Optimizing Exomiser to prioritize candidate genes underlying monogenic forms of common disease"** (Jana Petrovska, Isabel Rubio-Aliaga, Dorian T'Sjoen, Judith Van Wynsberghe, Olivier Vanakker, Johannes Münch, Elena M. Cabello, Olivier Bonny, Carsten A. Wagner, Ruxandra Bachmann-Gagescu; manuscript in preparation, preprint coming soon on medRxiv).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -167,13 +167,15 @@ Variant positions are GRCh37/hg19, matching the transcript cache.
 
 ## Data availability
 
-Raw WES data, individual-level phenotype and biochemistry data, and the per-participant pipeline outputs cannot be shared publicly due to patient privacy restrictions, and are therefore not part of this repository (`input/`, `output/`). <Describe how qualified researchers can request access to the SKSC cohort data.> UK Biobank gene-level results are available from the [AstraZeneca PheWAS Portal](https://azphewas.com/); UK Biobank individual-level data are available via the standard UK Biobank application procedure.
+The main datasets supporting the conclusions are included in the manuscript (and its additional files), and available from our genomic browser: https://sksc-variant-and-biochemistry.shinyapps.io/exomiser-candidates/. Any additional data will be shared upon request to the corresponding authors, except for per-patient WES data, for data protection reasons. Individual-level data and the per-participant pipeline outputs are therefore not part of this repository (`input/`, `output/`).
+
+The gene-level and variant-level association summary statistics from the UK Biobank sample are freely accessible from the [AstraZeneca PheWAS Portal](https://azphewas.com/).
 
 ## Citation
 
-If you use this code, please cite:
+The manuscript is in preparation; the preprint link will be added here once available. Until then, if you use this code, please cite this repository:
 
-> Petrovska J, Rubio-Aliaga I, T'Sjoen D, Van Wynsberghe J, Vanakker O, Münch J, Cabello EM, Bonny O, Wagner CA, Bachmann-Gagescu R. Optimizing Exomiser to prioritize candidate genes underlying monogenic forms of common disease. *<Journal>*. <Year>. <DOI>
+> Petrovska J, Rubio-Aliaga I, T'Sjoen D, Van Wynsberghe J, Vanakker O, Münch J, Cabello EM, Bonny O, Wagner CA, Bachmann-Gagescu R. Optimizing Exomiser to prioritize candidate genes underlying monogenic forms of common disease [code repository]. 2026. https://github.com/PetJana/optimizing_exomiser_common_disease
 
 A machine-readable citation is also provided in [`CITATION.cff`](CITATION.cff).
 
