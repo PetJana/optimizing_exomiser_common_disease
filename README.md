@@ -18,7 +18,7 @@ This repository contains the code used to benchmark and optimize an automated va
 - **Novel gene nomination** — the optimized pipeline is applied to non-established genes; top-ranked candidates are tested for gene-set overrepresentation (GO, KEGG).
 - **Gene-level rare variant enrichment** — candidate genes are looked up in gene-level burden tests (MAGMA on SKSC cases vs in-house controls, SKSC cases vs external controls) and validated against UK Biobank kidney stone PheWAS results.
 
-Results can be explored interactively with the included R Shiny app (see [Interactive results viewer](#interactive-results-viewer)).
+Results can be explored interactively in our online genomic browser: **https://sksc-variant-and-biochemistry.shinyapps.io/exomiser-candidates/** (the R Shiny app in `viewer_app/`; see [Interactive results viewer](#interactive-results-viewer)).
 
 ## Repository structure
 
@@ -141,7 +141,7 @@ export RSTUDIO_PANDOC="C:/Program Files/RStudio/resources/app/bin/quarto/bin/too
 
 ## Interactive results viewer
 
-`viewer_app/` contains an R Shiny app for browsing the candidate genes. For a selected gene it shows:
+`viewer_app/` contains an R Shiny app for browsing the candidate genes, available online at https://sksc-variant-and-biochemistry.shinyapps.io/exomiser-candidates/. For a selected gene it shows:
 
 - the gene's transcript/exon structure with the prioritized (rank 1) variants as a lollipop plot (`trackViewer`), one circle per carrier
 - a variant table with Exomiser annotations (HGVS, allele frequency, pathogenicity predictions, automated ACMG class)
