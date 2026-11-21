@@ -18,7 +18,7 @@ This repository contains the code used to benchmark and optimize an automated va
 - **Novel gene nomination** — the optimized pipeline is applied to non-established genes; top-ranked candidates are tested for gene-set overrepresentation (GO, KEGG).
 - **Gene-level rare variant enrichment** — candidate genes are looked up in gene-level burden tests (MAGMA on SKSC cases vs in-house controls, SKSC cases vs external controls) and validated against UK Biobank kidney stone PheWAS results.
 
-Results can be explored interactively in our online genomic browser: **https://sksc-variant-and-biochemistry.shinyapps.io/exomiser-candidates/** (the R Shiny app in `viewer_app/`; see [Interactive results viewer](#interactive-results-viewer)).
+Results can be explored interactively in a genomic browser: **https://sksc-variant-and-biochemistry.shinyapps.io/exomiser-candidates/** (the R Shiny app in `viewer_app/`; see [Interactive results viewer](#interactive-results-viewer)).
 
 ## Repository structure
 
@@ -167,7 +167,7 @@ Variant positions are GRCh37/hg19, matching the transcript cache.
 
 ## Data availability
 
-The main datasets supporting the conclusions are included in the manuscript (and its additional files), and available from our genomic browser: https://sksc-variant-and-biochemistry.shinyapps.io/exomiser-candidates/. Any additional data will be shared upon request to the corresponding authors, except for per-patient WES data, for data protection reasons. Individual-level data and the per-participant pipeline outputs are therefore not part of this repository (`input/`, `output/`).
+The main datasets supporting the conclusions are included in the manuscript (and its additional files), and available from a genomic browser: https://sksc-variant-and-biochemistry.shinyapps.io/exomiser-candidates/. Any additional data will be shared upon request to the corresponding authors, except for per-patient WES data, for data protection reasons. Individual-level data and the per-participant pipeline outputs are therefore not part of this repository (`input/`, `output/`).
 
 The gene-level and variant-level association summary statistics from the UK Biobank sample are freely accessible from the [AstraZeneca PheWAS Portal](https://azphewas.com/).
 
