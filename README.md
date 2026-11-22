@@ -39,12 +39,14 @@ Results can be explored interactively in a genomic browser: **https://sksc-varia
 ├── run_all.R                  # renders all steps in order
 ├── pipeline_configs/          # Exomiser analysis configs (YAML), HPO terms and run scripts
 │                              #   (see pipeline_configs/README.md)
+├── Exomiser_14.0.0/           # (not tracked) Exomiser output, one folder per run (see Input data)
+├── ids_filtering/             # (not tracked) participant ID mapping / QC filter, intronic carriers
 ├── input/                     # (not tracked) external inputs: gene-level test results, candidate gene list
-├── output/                    # (not tracked) everything the pipeline writes
-│   ├── results/               #   tables (.tsv/.txt/.xlsx/.docx) and enrichment objects (.RData)
-│   ├── counts_per_rank/       #   benchmarking counts (Figure 2A)
-│   ├── figures/               #   figures; images/ holds the ggplot objects (.RData)
-│   └── reports/               #   one HTML report per step
+├── output/                    # everything the pipeline writes; only summary-level files are tracked
+│   ├── results/               #   (not tracked) tables (.tsv/.txt/.xlsx/.docx) and enrichment objects (.RData)
+│   ├── counts_per_rank/       #   benchmarking counts per rank (Figure 2A)
+│   ├── figures/               #   figures (PNG/PDF tracked); images/ holds the ggplot objects (.RData, not tracked)
+│   └── reports/               #   (not tracked) one HTML report per step
 ├── viewer_app/                # R Shiny app for browsing candidate genes and variants
 ├── assets/                    # README images (workflow diagram, etc.)
 ├── LICENSE
@@ -63,8 +65,8 @@ Each step is an R Markdown file that renders to an HTML report in `output/report
 | 3 | `03_benchmarking_figure_2A.Rmd` | Proportion of gold-standard variants prioritized per rank, per run | Figure 2A |
 | 4 | `04_make_figure_2B_violin.Rmd` | Phenotype and variant score distributions, ESTABLISHED vs NON-ESTABLISHED | Figure 2B |
 | 5 | `05_make_figure_2C_acmg.Rmd` | Automated ACMG classification, ESTABLISHED vs NON-ESTABLISHED | Figure 2C |
-| 6 | `06_additional_filtering_save.Rmd` | Score filters, top rank, case/control frequency and burden (Fisher) filters → candidate NON-ESTABLISHED genes | candidate gene and variant tables |
-| 7 | `07_go_kegg_enrichment.Rmd` | GO (biological process) and KEGG overrepresentation of the candidate genes; term clustering (simplifyEnrichment, rrvgo) | GO/KEGG plots, enrichment objects |
+| 6 | `06_additional_filtering_save.Rmd` | Score filters, top rank, case/control frequency and burden (Fisher) filters → candidate NON-ESTABLISHED genes (see [Cohort-specific settings](#cohort-specific-settings)) | candidate gene and variant tables |
+| 7 | `07_go_kegg_enrichment.Rmd` | GO (biological process) and KEGG overrepresentation of the candidate genes; term clustering (simplifyEnrichment, rrvgo) | GO/KEGG plots (GO dot plot = Figure 3A), enrichment objects |
 | 8 | `08_top_ranked_per_participant.Rmd` | Top-ranked genes/variants per participant of the benchmarking run, down to the established gene | Excel table |
 | 9 | `09_gene_level_tests_overlap.Rmd` | Candidate genes in MAGMA, external-control and UK Biobank gene-level tests; SKSC/UKBB overlap | result tables, Figure 3B |
 | 10 | `10_combine_figures.Rmd` | Assembles the manuscript figures | Figures 2 and 3 |
@@ -91,10 +93,10 @@ BiocManager::install(c("clusterProfiler", "enrichplot", "org.Hs.eg.db", "simplif
 
 ### Exomiser runs
 
-Exomiser is run per participant with the analysis files in `pipeline_configs/analysis/` (one per run; settings, HPO terms and run instructions in [`pipeline_configs/README.md`](pipeline_configs/README.md)). The pipeline expects one folder per run, each containing Exomiser's per-participant variant tables:
+Exomiser is run per participant with the analysis files in `pipeline_configs/analysis/` (one per run; settings, HPO terms and run instructions in [`pipeline_configs/README.md`](pipeline_configs/README.md)). The pipeline expects one folder per run inside `Exomiser_<version>/` in the repository folder (`exomiser_dir` in `00_setup.R`, i.e. `Exomiser_14.0.0/` by default), each containing Exomiser's per-participant variant tables:
 
 ```
-<exomiser_dir>/
+Exomiser_14.0.0/
 ├── SKSC_3_MAF1per/                        # benchmarking / ESTABLISHED run
 ├── SKSC_3_MAF1per_herIncluded/            # benchmarking run
 ├── SKSC_3_MAF1per_herIncluded_onlyKS/     # benchmarking run
@@ -104,13 +106,14 @@ Exomiser is run per participant with the analysis files in `pipeline_configs/ana
 
 ### Other inputs
 
-Referenced in `00_setup.R`:
+Referenced in `00_setup.R` (paths relative to the repository folder; none of these files are tracked):
 
-- gold-standard (manually curated) KSD variants per participant
-- participant ID mapping and study QC filter (`IDs_for_study_filtering.txt`)
-- list of established KSD genes (`KS_genes.txt`)
+- `Vars_from_Munch_2026_Suppl_table_green_only.txt` — gold-standard (manually curated) KSD variants per participant (columns include `ID`, `GENE`, `VAR`, `INH`)
+- `ids_filtering/IDs_for_study_filtering.txt` — participant ID mapping and study QC filter (columns `SKSC_ID`, `VCF_FILE_ID`, `FILTERED`)
+- `ids_filtering/intronic_carriers.txt` — participants whose gold-standard variant is intronic and therefore not scored by Exomiser (one SKSC ID per line; excluded from benchmarking)
+- `KS_genes.txt` — list of established KSD genes (one gene symbol per line)
 
-In `input/`:
+In `input/` (read by steps 9 and 11):
 
 - `SKSC_and_Controls_WES_filtered_ks_gnomAD_0.02CADD20_GEN_SEX_corrected.genes.out` — MAGMA gene-level results (SKSC cases vs in-house controls)
 - `Results_misslof_am0.8_1_lambda1.12_GnomADMAF0.01_MAF0.01_ks.txt` — gene-level results, SKSC cases vs external controls
@@ -120,6 +123,13 @@ In `input/`:
 ### Configuration
 
 Run settings (Exomiser version, runs, score cutoffs, PAPSS2/FAM20C removal) and all input paths are set at the top of `00_setup.R`. Edit the paths there to point to your copies of the inputs.
+
+### Cohort-specific settings
+
+Step 6 (`06_additional_filtering_save.Rmd`) contains settings specific to the SKSC data, which need to be adapted for another cohort:
+
+- `n_cases_total <- 701` and `n_controls_total <- 200` — the number of cases and controls run through Exomiser, used as denominators in the case/control frequency and Fisher burden filters. They are set by hand, not counted from the data.
+- `control_pattern <- "^G"` — controls are recognized by their `Participant_ID` (VCF file ID) starting with "G"; all other participants are treated as cases.
 
 ## Usage
 
@@ -133,7 +143,7 @@ Rscript run_all.R
 rmarkdown::render("07_go_kegg_enrichment.Rmd", output_dir = "output/reports")
 ```
 
-When running outside RStudio, R may not find pandoc; point it to RStudio's copy first, e.g.
+When running outside RStudio, R may not find pandoc; either install pandoc system-wide or point `RSTUDIO_PANDOC` to the copy bundled with RStudio, e.g. on Windows:
 
 ```bash
 export RSTUDIO_PANDOC="C:/Program Files/RStudio/resources/app/bin/quarto/bin/tools"
@@ -167,7 +177,7 @@ Variant positions are GRCh37/hg19, matching the transcript cache.
 
 ## Data availability
 
-The main datasets supporting the conclusions are included in the manuscript (and its additional files), and available from a genomic browser: https://sksc-variant-and-biochemistry.shinyapps.io/exomiser-candidates/. Any additional data will be shared upon request to the corresponding authors, except for per-patient WES data, for data protection reasons. Individual-level data and the per-participant pipeline outputs are therefore not part of this repository (`input/`, `output/`).
+The main datasets supporting the conclusions are included in the manuscript (and its additional files), and available from a genomic browser: https://sksc-variant-and-biochemistry.shinyapps.io/exomiser-candidates/. Any additional data will be shared upon request to the corresponding authors, except for per-patient WES data, for data protection reasons. Individual-level data and the per-participant pipeline outputs are therefore not part of this repository (`Exomiser_*/`, `ids_filtering/`, `input/`, `output/results/`, `output/reports/`); only summary-level outputs (counts per rank, figures) are included.
 
 The gene-level and variant-level association summary statistics from the UK Biobank sample are freely accessible from the [AstraZeneca PheWAS Portal](https://azphewas.com/).
 
