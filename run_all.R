@@ -18,7 +18,7 @@ script_dir <- function() {
     if (nzchar(p)) return(dirname(normalizePath(p)))
   }
 
-  stop("Could not locate the script folder; setwd() to Exomiser_paper_cleaned and try again.")
+  stop("Could not locate the script folder; setwd() to the repository folder (containing run_all.R) and try again.")
 }
 
 pipeline_dir <- script_dir()
