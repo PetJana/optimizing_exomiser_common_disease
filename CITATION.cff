@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-message: "If you use this code, please cite it as below. The manuscript is in preparation; this file will be updated with the preprint once available."
+message: "If you use this code, please cite the preprint below (preferred-citation)."
 title: "Optimizing Exomiser to prioritize candidate genes underlying monogenic forms of common disease"
 type: software
 license: MIT
@@ -34,3 +34,31 @@ authors:
     given-names: Carsten A.
   - family-names: Bachmann-Gagescu
     given-names: Ruxandra
+preferred-citation:
+  type: article
+  title: "Optimizing Exomiser to prioritize candidate genes underlying monogenic forms of common disease"
+  journal: "medRxiv"
+  year: 2026
+  doi: 10.64898/2026.11.20.26368494
+  url: "https://doi.org/10.64898/2026.11.20.26368494"
+  authors:
+    - family-names: Petrovska
+      given-names: Jana
+    - family-names: Rubio-Aliaga
+      given-names: Isabel
+    - family-names: "T'Sjoen"
+      given-names: Dorian
+    - family-names: Van Wynsberghe
+      given-names: Judith
+    - family-names: Vanakker
+      given-names: Olivier
+    - family-names: Münch
+      given-names: Johannes
+    - family-names: Cabello
+      given-names: Elena M.
+    - family-names: Bonny
+      given-names: Olivier
+    - family-names: Wagner
+      given-names: Carsten A.
+    - family-names: Bachmann-Gagescu
+      given-names: Ruxandra

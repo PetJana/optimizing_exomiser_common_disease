@@ -1,6 +1,6 @@
 # Optimizing Exomiser to prioritize candidate genes underlying monogenic forms of common disease
 
-Scripts and analysis code accompanying the manuscript **"Optimizing Exomiser to prioritize candidate genes underlying monogenic forms of common disease"** (Jana Petrovska, Isabel Rubio-Aliaga, Dorian T'Sjoen, Judith Van Wynsberghe, Olivier Vanakker, Johannes Münch, Elena M. Cabello, Olivier Bonny, Carsten A. Wagner, Ruxandra Bachmann-Gagescu; manuscript in preparation, preprint coming soon on medRxiv).
+Scripts and analysis code accompanying the manuscript **"Optimizing Exomiser to prioritize candidate genes underlying monogenic forms of common disease"** (Jana Petrovska, Isabel Rubio-Aliaga, Dorian T'Sjoen, Judith Van Wynsberghe, Olivier Vanakker, Johannes Münch, Elena M. Cabello, Olivier Bonny, Carsten A. Wagner, Ruxandra Bachmann-Gagescu; *medRxiv*, 2026; [doi:10.64898/2026.11.20.26368494](https://doi.org/10.64898/2026.11.20.26368494)).
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24442383.svg)](https://doi.org/10.5281/zenodo.24442383)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -184,11 +184,15 @@ The gene-level and variant-level association summary statistics from the UK Biob
 
 ## Citation
 
-The manuscript is in preparation; the preprint link will be added here once available. Until then, if you use this code, please cite this repository:
+If you use this code, please cite the preprint:
+
+> Petrovska J, Rubio-Aliaga I, T'Sjoen D, Van Wynsberghe J, Vanakker O, Münch J, Cabello EM, Bonny O, Wagner CA, Bachmann-Gagescu R. Optimizing Exomiser to prioritize candidate genes underlying monogenic forms of common disease. *medRxiv*. 2026. https://doi.org/10.64898/2026.11.20.26368494
+
+The code itself is archived on Zenodo:
 
 > Petrovska J, Rubio-Aliaga I, T'Sjoen D, Van Wynsberghe J, Vanakker O, Münch J, Cabello EM, Bonny O, Wagner CA, Bachmann-Gagescu R. Optimizing Exomiser to prioritize candidate genes underlying monogenic forms of common disease [code repository]. Zenodo. 2026. https://doi.org/10.5281/zenodo.24442383
 
-This DOI always resolves to the latest version. To cite the exact version used in the manuscript (v1.0.0), use https://doi.org/10.5281/zenodo.24442384.
+This Zenodo DOI always resolves to the latest version. To cite the exact version used in the manuscript (v1.0.0), use https://doi.org/10.5281/zenodo.24442384.
 
 A machine-readable citation is also provided in [`CITATION.cff`](CITATION.cff).
 
