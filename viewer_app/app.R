@@ -404,8 +404,14 @@ ui <- bslib::page_navbar(
       "the furthest point within 1.5 × IQR of the box."),
 
     h4("Citation"),
-    p("For more information, please see < our paper>.
-      We are happy if the provided information helps your work. You are free to use it, just please cite us. "),
+    p("For more information, please see ",
+      ext_link("https://doi.org/10.64898/2026.11.20.26368494", "Petrovska et al., 2026 (medRxiv)"), ". ",
+      "We are happy if the provided information helps your work. You are free to use it, just please cite us:"),
+    p(em("Petrovska J, Rubio-Aliaga I, T'Sjoen D, Van Wynsberghe J, Vanakker O, Münch J, Cabello EM, ",
+         "Bonny O, Wagner CA, Bachmann-Gagescu R. Optimizing Exomiser to prioritize candidate genes ",
+         "underlying monogenic forms of common disease. medRxiv. 2026. "),
+      ext_link("https://doi.org/10.64898/2026.11.20.26368494",
+               "https://doi.org/10.64898/2026.11.20.26368494")),
 
     h4("Genome assembly"),
     p("Variant positions are given in ",
